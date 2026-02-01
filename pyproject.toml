@@ -39,7 +39,6 @@ dev = [
     "pytest-asyncio>=0.23.0",
     "diff-cover>=8.0.0",
     "commitizen>=3.20.0",
-    "python-semantic-release>=8.10.0",
     "py-spy>=0.3.0",
     "scalene>=1.5.0",
     "hatch>=1.8.0",
@@ -161,4 +160,3 @@ dev = [
 ]
 
 # [dependency-groups] section removed - all dev dependencies are in [project.optional-dependencies.dev]
-

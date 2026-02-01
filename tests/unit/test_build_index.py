@@ -7,6 +7,7 @@ from tools.build_index import build_index
 if TYPE_CHECKING:
     from pathlib import Path
 
+
 def test_build_index_collects_skill(tmp_path: Path) -> None:
     """Index builder should collect skill metadata."""
     skill_dir = tmp_path / ".curated" / "git-status"

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import json
 import sys
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 
 class ExitCode(IntEnum):
@@ -37,23 +37,38 @@ class Diagnostic:
     message: str
 
 
+def _empty_actions() -> list[Action]:
+    """Return empty action list."""
+    return []
+
+
+def _empty_diagnostics() -> list[Diagnostic]:
+    """Return empty diagnostic list."""
+    return []
+
+
+def _empty_artifacts() -> list[str]:
+    """Return empty artifacts list."""
+    return []
+
+
 @dataclass(frozen=True)
 class Report:
     """Normalized report for skill scripts."""
 
     ok: bool
     summary: str
-    actions: list[Action] = field(default_factory=list)
-    diagnostics: list[Diagnostic] = field(default_factory=list)
-    artifacts: list[str] = field(default_factory=list)
+    actions: list[Action] = field(default_factory=_empty_actions)
+    diagnostics: list[Diagnostic] = field(default_factory=_empty_diagnostics)
+    artifacts: list[str] = field(default_factory=_empty_artifacts)
 
-    def to_dict(self) -> dict[str, object]:
+    def to_dict(self) -> ReportPayload:
         """Convert report to a dictionary for JSON output."""
         return {
             "ok": self.ok,
             "summary": self.summary,
-            "actions": [asdict(action) for action in self.actions],
-            "diagnostics": [asdict(diag) for diag in self.diagnostics],
+            "actions": [_serialize_action(action) for action in self.actions],
+            "diagnostics": [_serialize_diagnostic(diag) for diag in self.diagnostics],
             "artifacts": list(self.artifacts),
         }
 
@@ -70,6 +85,52 @@ def emit_report(report: Report, *, json_output: bool) -> None:
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+class ActionPayload(TypedDict):
+    """Serialized Action payload."""
+
+    cmd: str
+    cwd: str
+    exit_code: int
+    stdout: str | None
+    stderr: str | None
+
+
+class DiagnosticPayload(TypedDict):
+    """Serialized Diagnostic payload."""
+
+    level: str
+    message: str
+
+
+class ReportPayload(TypedDict):
+    """Serialized Report payload."""
+
+    ok: bool
+    summary: str
+    actions: list[ActionPayload]
+    diagnostics: list[DiagnosticPayload]
+    artifacts: list[str]
+
+
+def _serialize_action(action: Action) -> ActionPayload:
+    """Serialize an Action to a payload."""
+    return ActionPayload(
+        cmd=action.cmd,
+        cwd=action.cwd,
+        exit_code=action.exit_code,
+        stdout=action.stdout,
+        stderr=action.stderr,
+    )
+
+
+def _serialize_diagnostic(diagnostic: Diagnostic) -> DiagnosticPayload:
+    """Serialize a Diagnostic to a payload."""
+    return DiagnosticPayload(
+        level=diagnostic.level,
+        message=diagnostic.message,
+    )
 
 
 def action_from_proc(

@@ -29,7 +29,7 @@ def run(
     env: dict[str, str] | None = None,
 ) -> ProcResult:
     """Run an external command and capture output."""
-    if not cmd or not all(isinstance(part, str) and part for part in cmd):
+    if not cmd or any(not part for part in cmd):
         msg = "cmd must be a non-empty list of strings"
         raise ValueError(msg)
 
