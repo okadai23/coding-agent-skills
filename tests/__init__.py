@@ -1,1 +1,1 @@
-"""Test package for alpha_lib."""
+"""Test package."""
