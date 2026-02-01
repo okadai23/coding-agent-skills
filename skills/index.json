@@ -1,0 +1,20 @@
+[
+  {
+    "name": "git-status",
+    "description": "Show git status and diff summary. Use when the user asks about git cleanliness or before running tools.",
+    "path": "skills/.curated/git-status",
+    "tier": "curated"
+  },
+  {
+    "name": "detect-build-system",
+    "description": "Detect build systems by file markers. Use when choosing build/test/lint skills for a repository.",
+    "path": "skills/.experimental/detect-build-system",
+    "tier": "experimental"
+  },
+  {
+    "name": "skill-scaffold",
+    "description": "Scaffold a new skill directory. Use when adding a new skill to this catalog.",
+    "path": "skills/.system/skill-scaffold",
+    "tier": "system"
+  }
+]
