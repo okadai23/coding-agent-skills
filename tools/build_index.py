@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import argparse
-import sys
 import json
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import yaml
-
 
 FRONT_MATTER_SPLIT = 3
 

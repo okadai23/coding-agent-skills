@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from subprocess import CompletedProcess, run as run_subprocess
+from subprocess import CompletedProcess
+from subprocess import run as run_subprocess
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
