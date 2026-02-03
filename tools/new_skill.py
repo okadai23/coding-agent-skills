@@ -10,6 +10,7 @@ from pathlib import Path
 AGENT_SKILLS_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 MAX_NAME_LENGTH = 64
 MAX_DESCRIPTION_LENGTH = 500
+TIERS = [".curated", ".experimental", ".system"]
 
 
 def validate_skill_name(name: str) -> None:
@@ -46,6 +47,11 @@ def yaml_escape_single_line(text: str) -> str:
     return f'"{cleaned}"'
 
 
+def test_filename_for_skill(name: str) -> str:
+    """Return the canonical test filename for a skill."""
+    return f"test_{name.replace('-', '_')}.py"
+
+
 @dataclass(frozen=True)
 class CreateSkillRequest:
     """Captured inputs for a new skill scaffold."""
@@ -58,6 +64,7 @@ class CreateSkillRequest:
     license_name: str
     author: str | None
     tags: list[str]
+    make_tests: bool
 
 
 def render_skill_md(req: CreateSkillRequest) -> str:
@@ -227,7 +234,7 @@ def main(argv: list[str]) -> int:
     res = Result(
         ok=True,
         summary="TODO: implement skill script",
-        changed=bool(args.apply),
+        changed=False,
         actions=actions,
         artifacts=[],
         warnings=[],
@@ -246,6 +253,96 @@ def main(argv: list[str]) -> int:
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv[1:]))
 """
+
+
+def render_test_stub(skill_name: str) -> str:
+    """Render a pytest skeleton for script-backed skills."""
+    lines = [
+        "from __future__ import annotations",
+        "",
+        "import json",
+        "import subprocess",
+        "import sys",
+        "from pathlib import Path",
+        "",
+        "",
+        "REPO_ROOT = Path(__file__).resolve().parents[2]",
+        f'SKILL_NAME = "{skill_name}"',
+        f"TIERS = {TIERS!r}",
+        "",
+        "",
+        "def find_skill_dir() -> Path:",
+        "    for tier in TIERS:",
+        '        path = REPO_ROOT / "skills" / tier / SKILL_NAME',
+        "        if path.exists():",
+        "            return path",
+        "    raise AssertionError(",
+        '        f"Skill directory not found for {SKILL_NAME} under skills/{TIERS}"',
+        "    )",
+        "",
+        "",
+        "def run_script(*args: str) -> subprocess.CompletedProcess[str]:",
+        "    skill_dir = find_skill_dir()",
+        '    script = skill_dir / "scripts" / "run.py"',
+        '    assert script.exists(), f"Missing entry script: {script}"',
+        "    return subprocess.run(",
+        "        [sys.executable, str(script), *args],",
+        "        cwd=str(REPO_ROOT),",
+        "        text=True,",
+        "        capture_output=True,",
+        "        check=False,",
+        "    )",
+        "",
+        "",
+        "def parse_json_stdout(proc: subprocess.CompletedProcess[str]) -> dict:",
+        '    assert proc.stdout.strip(), "stdout is empty in --json mode"',
+        "    obj = json.loads(proc.stdout)",
+        '    assert isinstance(obj, dict), "JSON output must be an object"',
+        '    for key in ("ok", "summary", "changed"):',
+        '        assert key in obj, f"JSON missing required key: {key}"',
+        '    assert isinstance(obj["ok"], bool)',
+        '    assert isinstance(obj["summary"], str)',
+        '    assert isinstance(obj["changed"], bool)',
+        "    return obj",
+        "",
+        "",
+        "def test_help_works():",
+        '    proc = run_script("--help")',
+        "    assert proc.returncode == 0, proc.stderr",
+        "",
+        "",
+        "def test_json_contract_dry_run():",
+        '    proc = run_script("--json", "--cwd", str(REPO_ROOT))',
+        "    assert proc.returncode in (0, 3), (",
+        '        f"unexpected exit={proc.returncode} stderr={proc.stderr}"',
+        "    )",
+        "    obj = parse_json_stdout(proc)",
+        '    assert obj["changed"] is False',
+        "",
+        "    if proc.returncode == 0:",
+        '        assert obj["ok"] is True',
+        "    if proc.returncode == 3:",
+        '        assert obj["ok"] is False',
+        "",
+        "",
+        "def test_json_contract_invalid_cwd_is_precondition_failure():",
+        '    bad = REPO_ROOT / ".tmp" / "does-not-exist"',
+        '    proc = run_script("--json", "--cwd", str(bad))',
+        "    assert proc.returncode == 3, (",
+        '        f"expected exit=3, got {proc.returncode} stderr={proc.stderr}"',
+        "    )",
+        "    obj = parse_json_stdout(proc)",
+        '    assert obj["ok"] is False',
+        '    assert obj["changed"] is False',
+        "",
+        "",
+        "# TODO: Add fixture-based tests:",
+        "# - Create fixtures/<skill>/... and run the script with --cwd pointing to",
+        "#   that fixture.",
+        "# - Assert it chooses the right commands and reports diagnostics correctly.",
+        "",
+    ]
+    return "\n".join(lines)
 
 
 def write_text(path: Path, content: str, executable: bool = False) -> None:
@@ -308,6 +405,7 @@ def build_request(ns: argparse.Namespace, name: str, desc: str) -> CreateSkillRe
     """Build a CreateSkillRequest from CLI options."""
     tags = parse_tags(ns.tags)
     out_root = Path(ns.out_root)
+    make_tests = (ns.tests == "yes") or (ns.tests == "auto" and ns.run_type == "script")
     return CreateSkillRequest(
         name=name,
         description=desc,
@@ -317,6 +415,7 @@ def build_request(ns: argparse.Namespace, name: str, desc: str) -> CreateSkillRe
         license_name=ns.license_name,
         author=ns.author,
         tags=tags,
+        make_tests=make_tests,
     )
 
 
@@ -359,6 +458,15 @@ def create_scaffold(skill_dir: Path, req: CreateSkillRequest) -> None:
             render_script_stub(req),
             executable=True,
         )
+
+    if req.make_tests:
+        repo_root = Path(__file__).resolve().parents[1]
+        tests_path = repo_root / "tests" / "skills" / test_filename_for_skill(req.name)
+        if not tests_path.exists():
+            tests_path.parent.mkdir(parents=True, exist_ok=True)
+            write_text(tests_path, render_test_stub(req.name))
+        else:
+            log(f"⚠️ tests already exist, skip: {tests_path}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -403,6 +511,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Comma-separated tags, e.g. build,git,go",
     )
     parser.add_argument(
+        "--tests",
+        default="auto",
+        choices=["auto", "yes", "no"],
+        help="Generate pytest skeleton tests",
+    )
+    parser.add_argument(
         "--yes",
         action="store_true",
         help="Non-interactive: fail if required fields are missing",
@@ -424,6 +538,8 @@ def main(argv: list[str] | None = None) -> int:
         return 3
 
     log(f"✅ Created skill scaffold: {skill_dir}")
+    if req.make_tests:
+        log(f"✅ Generated tests: tests/skills/{test_filename_for_skill(req.name)}")
     log("Next steps:")
     log(f"1) Edit {skill_dir / 'SKILL.md'} (fill TODOs, refine triggers/examples)")
     if req.run_type == "script":

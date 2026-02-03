@@ -35,6 +35,7 @@ def test_render_skill_md_includes_front_matter() -> None:
         license_name="MIT",
         author=None,
         tags=[],
+        make_tests=False,
     )
     content = render_skill_md(req)
     assert "name: build-go" in content
