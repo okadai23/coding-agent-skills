@@ -523,7 +523,7 @@ sphinxcontrib-serializinghtml==2.0.0
     # via sphinx
 sse-starlette==3.2.0
     # via mcp
-starlette==0.50.0
+starlette==0.52.1
     # via
     #   fastapi
     #   mcp
