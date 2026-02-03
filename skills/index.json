@@ -12,6 +12,12 @@
     "tier": "experimental"
   },
   {
+    "name": "new-skill",
+    "description": "Scaffold a new Agent Skill in this repository (SKILL.md + optional scripts) following the repo script contract. Use when adding a new skill or workflow.",
+    "path": "skills/.system/new-skill",
+    "tier": "system"
+  },
+  {
     "name": "skill-scaffold",
     "description": "Scaffold a new skill directory. Use when adding a new skill to this catalog.",
     "path": "skills/.system/skill-scaffold",

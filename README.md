@@ -30,7 +30,7 @@ fixtures/          # テスト用サンプルプロジェクト
 uv sync --extra dev
 
 # スキル雛形の生成
-uv run python tools/new_skill.py --name build-go --description "Go build/test helper"
+uv run python tools/new_skill.py build-go --description "Go build/test helper" --tier .experimental --run-type script --yes
 
 # スキル検証
 uv run python tools/validate_skills.py
@@ -56,4 +56,3 @@ uv run python tools/install.py --mode symlink
 
 - `docs/authoring.md`: スキル設計/記述のガイド
 - `docs/script-contract.md`: スクリプトI/FとJSONスキーマ
-

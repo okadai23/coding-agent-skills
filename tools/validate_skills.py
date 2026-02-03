@@ -9,7 +9,7 @@ from pathlib import Path
 
 import yaml
 
-from tools.new_skill import NAME_RE
+from tools.new_skill import AGENT_SKILLS_NAME_RE
 
 FRONT_MATTER_SPLIT = 3
 
@@ -69,7 +69,7 @@ def validate_skill_dir(skill_dir: Path) -> list[Diagnostic]:
                 message=f"{skill_dir} name mismatch: {meta.name}",
             ),
         )
-    if not NAME_RE.match(meta.name):
+    if not AGENT_SKILLS_NAME_RE.match(meta.name):
         diagnostics.append(
             Diagnostic(
                 level="error",
