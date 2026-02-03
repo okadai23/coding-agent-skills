@@ -106,7 +106,7 @@ dnspython==2.8.0
     # via email-validator
 docstring-parser==0.17.0
     # via cyclopts
-docutils==0.21.2
+docutils==0.22.4
     # via
     #   rich-rst
     #   sphinx
