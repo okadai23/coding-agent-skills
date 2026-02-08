@@ -589,7 +589,7 @@ uvicorn==0.40.0
     #   clean-interfaces (pyproject.toml)
     #   fastmcp
     #   mcp
-virtualenv==20.31.2
+virtualenv==20.36.1
     # via
     #   hatch
     #   nox
